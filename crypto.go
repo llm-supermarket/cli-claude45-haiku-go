@@ -1,11 +1,7 @@
 package main
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
-	"encoding/base32"
-	"encoding/base64"
 	"fmt"
 	"io"
 
@@ -26,7 +22,10 @@ func encryptData(plaintext []byte, password string, salt []byte) ([]byte, error)
 		}
 	}
 
-	key := deriveKey(password, salt)
+	key, err := deriveKey(password, salt)
+	if err != nil {
+		return nil, err
+	}
 
 	var nonce [nonceSize]byte
 	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
@@ -52,7 +51,10 @@ func decryptData(ciphertext []byte, password string) ([]byte, error) {
 	nonce := ciphertext[16 : 16+nonceSize]
 	encrypted := ciphertext[16+nonceSize:]
 
-	key := deriveKey(password, salt)
+	key, err := deriveKey(password, salt)
+	if err != nil {
+		return nil, err
+	}
 
 	var nonceArray [nonceSize]byte
 	copy(nonceArray[:], nonce)
@@ -65,93 +67,16 @@ func decryptData(ciphertext []byte, password string) ([]byte, error) {
 	return plaintext, nil
 }
 
-func deriveKey(password string, salt []byte) *[32]byte {
-	key, _ := scrypt.Key([]byte(password), salt, encryptionIter, 8, 1, 32)
+func deriveKey(password string, salt []byte) (*[32]byte, error) {
+	key, err := scrypt.Key([]byte(password), salt, encryptionIter, 8, 1, 32)
+	if err != nil {
+		return nil, fmt.Errorf("key derivation failed: %w", err)
+	}
 	var keyArray [32]byte
 	copy(keyArray[:], key)
-	return &keyArray
+	return &keyArray, nil
 }
 
-func encryptFilename(filename string, password string, salt []byte, encoding string) (string, error) {
-	if len(salt) == 0 {
-		salt = make([]byte, 16)
-		for i := range salt {
-			salt[i] = 0
-		}
-	}
-
-	key := deriveKey(password, salt)
-	block, err := aes.NewCipher(key[:])
-	if err != nil {
-		return "", err
-	}
-
-	filenameBytes := []byte(filename)
-	padded := pkcs7Pad(filenameBytes, aes.BlockSize)
-
-	iv := make([]byte, aes.BlockSize)
-	for i := range iv {
-		iv[i] = 0
-	}
-
-	ciphertext := make([]byte, len(padded))
-	mode := cipher.NewCBCEncrypter(block, iv)
-	mode.CryptBlocks(ciphertext, padded)
-
-	switch encoding {
-	case "base64":
-		return base64.StdEncoding.EncodeToString(ciphertext), nil
-	case "base32":
-		return base32.StdEncoding.EncodeToString(ciphertext), nil
-	default:
-		return base64.StdEncoding.EncodeToString(ciphertext), nil
-	}
-}
-
-func decryptFilename(encoded string, password string, encoding string) (string, error) {
-	var ciphertext []byte
-	var err error
-
-	switch encoding {
-	case "base64":
-		ciphertext, err = base64.StdEncoding.DecodeString(encoded)
-	case "base32":
-		ciphertext, err = base32.StdEncoding.DecodeString(encoded)
-	default:
-		ciphertext, err = base64.StdEncoding.DecodeString(encoded)
-	}
-
-	if err != nil {
-		return "", err
-	}
-
-	salt := make([]byte, 16)
-	for i := range salt {
-		salt[i] = 0
-	}
-
-	key := deriveKey(password, salt)
-	block, err := aes.NewCipher(key[:])
-	if err != nil {
-		return "", err
-	}
-
-	iv := make([]byte, aes.BlockSize)
-	for i := range iv {
-		iv[i] = 0
-	}
-
-	plaintext := make([]byte, len(ciphertext))
-	mode := cipher.NewCBCDecrypter(block, iv)
-	mode.CryptBlocks(plaintext, ciphertext)
-
-	plaintext, err = pkcs7Unpad(plaintext)
-	if err != nil {
-		return "", err
-	}
-
-	return string(plaintext), nil
-}
 
 func pkcs7Pad(data []byte, blockSize int) []byte {
 	padding := blockSize - (len(data) % blockSize)

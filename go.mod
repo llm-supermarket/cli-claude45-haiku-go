@@ -1,6 +1,6 @@
 module github.com/llm-supermarket-org/cli-claude45-haiku-go
 
-go 1.25.4
+go 1.25.0
 
 require (
 	golang.org/x/crypto v0.53.0
