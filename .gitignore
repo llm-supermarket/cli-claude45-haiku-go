@@ -1,1 +1,10 @@
 *.exe
+cli-encrypt
+dist/
+coverage.out
+*.swp
+*.swo
+.vscode/
+.idea/
+*.test
+.DS_Store

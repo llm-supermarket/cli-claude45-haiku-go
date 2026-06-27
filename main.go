@@ -1,19 +1,16 @@
 package main
 
 import (
-	"bufio"
 	"encoding/base64"
 	"flag"
 	"fmt"
-	"io"
 	"os"
-	"strings"
 	"syscall"
 
 	"golang.org/x/term"
 )
 
-const version = "0.1.0"
+var version = "0.1.0"
 
 func main() {
 	var (
@@ -89,6 +86,12 @@ func run(inputFile, inputAlt, outputFile, outputAlt, password, saltStr, encoding
 		if err != nil {
 			return err
 		}
+		if pwd == "" {
+			return fmt.Errorf("password cannot be empty")
+		}
+		if len(pwd) < 12 {
+			fmt.Fprintf(os.Stderr, "WARNING: Password is weak (less than 12 characters). Consider using a stronger password.\n")
+		}
 		password = pwd
 	} else if os.Getenv("RCLONE_ENCRYPT_PASSWORD") == "" {
 		// Only warn if using --password flag, not if using env var
@@ -96,6 +99,8 @@ func run(inputFile, inputAlt, outputFile, outputAlt, password, saltStr, encoding
 		fmt.Fprintf(os.Stderr, "  - Your password may appear in shell history\n")
 		fmt.Fprintf(os.Stderr, "  - Use environment variables instead: RCLONE_ENCRYPT_PASSWORD=mypass\n")
 		fmt.Fprintf(os.Stderr, "  - Or provide password interactively (just press Enter when prompted)\n\n")
+	} else if password == "" && os.Getenv("RCLONE_ENCRYPT_PASSWORD") == "" {
+		return fmt.Errorf("password cannot be empty")
 	}
 
 	// Get salt if needed
@@ -142,40 +147,3 @@ func promptPassword(prompt string) (string, error) {
 	return string(bytePassword), nil
 }
 
-func promptPasswordWithConfirm(prompt string) (string, error) {
-	pwd1, err := promptPassword(prompt)
-	if err != nil {
-		return "", err
-	}
-
-	pwd2, err := promptPassword("Confirm password: ")
-	if err != nil {
-		return "", err
-	}
-
-	if pwd1 != pwd2 {
-		return "", fmt.Errorf("passwords do not match")
-	}
-
-	return pwd1, nil
-}
-
-func promptYesNo(prompt string) (bool, error) {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Fprint(os.Stderr, prompt)
-	resp, err := reader.ReadString('\n')
-	if err != nil {
-		return false, err
-	}
-	return strings.ToLower(strings.TrimSpace(resp)) == "y" || strings.ToLower(strings.TrimSpace(resp)) == "yes", nil
-}
-
-func promptString(prompt string) (string, error) {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Fprint(os.Stderr, prompt)
-	line, err := reader.ReadString('\n')
-	if err != nil && err != io.EOF {
-		return "", err
-	}
-	return strings.TrimSpace(line), nil
-}

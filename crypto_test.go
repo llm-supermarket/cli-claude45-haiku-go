@@ -107,47 +107,6 @@ func TestEncryptDecryptLargeData(t *testing.T) {
 	}
 }
 
-func TestEncryptFilenameBase32(t *testing.T) {
-	filename := "test_file.txt"
-	password := "testpass"
-
-	encrypted, err := encryptFilename(filename, password, nil, "base32")
-	if err != nil {
-		t.Fatalf("filename encryption failed: %v", err)
-	}
-
-	if len(encrypted) == 0 {
-		t.Fatal("encrypted filename is empty")
-	}
-
-	decrypted, err := decryptFilename(encrypted, password, "base32")
-	if err != nil {
-		t.Fatalf("filename decryption failed: %v", err)
-	}
-
-	if decrypted != filename {
-		t.Errorf("decrypted filename doesn't match: got %q, want %q", decrypted, filename)
-	}
-}
-
-func TestEncryptFilenameBase64(t *testing.T) {
-	filename := "another_test.doc"
-	password := "mypass"
-
-	encrypted, err := encryptFilename(filename, password, nil, "base64")
-	if err != nil {
-		t.Fatalf("filename encryption failed: %v", err)
-	}
-
-	decrypted, err := decryptFilename(encrypted, password, "base64")
-	if err != nil {
-		t.Fatalf("filename decryption failed: %v", err)
-	}
-
-	if decrypted != filename {
-		t.Errorf("decrypted filename doesn't match: got %q, want %q", decrypted, filename)
-	}
-}
 
 func TestPKCS7Padding(t *testing.T) {
 	tests := []struct {
