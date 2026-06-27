@@ -1,0 +1,19 @@
+{
+  "version": "0.1.0",
+  "description": "A CLI tool that encrypts and decrypts files using rclone encryption defaults",
+  "homepage": "https://github.com/llm-supermarket-org/cli-claude45-haiku-go",
+  "license": "MIT",
+  "url": "https://github.com/llm-supermarket-org/cli-claude45-haiku-go/releases/download/v0.1.0/cli-encrypt-windows-amd64.exe#/cli-encrypt.exe",
+  "hash": "sha256:abc123placeholder",
+  "bin": "cli-encrypt.exe",
+  "checkver": {
+    "github": "llm-supermarket-org/cli-claude45-haiku-go",
+    "regex": "v([\\w.]+)"
+  },
+  "autoupdate": {
+    "url": "https://github.com/llm-supermarket-org/cli-claude45-haiku-go/releases/download/v$version/cli-encrypt-windows-amd64.exe#/cli-encrypt.exe",
+    "hash": {
+      "url": "$baseurl/cli-encrypt-windows-amd64.exe.sha256"
+    }
+  }
+}
